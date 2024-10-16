@@ -1,0 +1,463 @@
+//初始化脚本，读取脚本配置
+log('开始读取脚本配置');
+auto.waitFor();
+scriptShopData = Config.o_storage.get('scriptShopData');
+//设置一些脚本常量
+var scriptConst = {
+    启动时间 : "5-10",
+    等待时间 : "3000-9000",
+    上滑概率 : 10
+}
+
+//进行架构设计,遍历架构
+scriptShopData.forEach((item, index) => {
+    if (item) {
+        log('开始运行第%d个项目，%s', (index+1), item.title);
+        //开始读取时间，如果为0或者null就跳过
+        if (item.time != '' && Number(item.time) > 0) {
+            log('运行该项目');
+
+            //开始启动App
+            launchApp(item.title);
+            sleep(randomNumOfSing(scriptConst.启动时间, '-') * 1000);
+            
+            //新建循环变量
+            loop = true
+            //新建抗干扰线程
+            let 抗干扰线程 = threads.start(function(){
+                log('启动抗干扰线程');
+                抗干扰函数(item.title);
+            });
+
+            //新建计时线程
+            let 计时线程 = threads.start(function(){
+                log('启动计时线程');
+                let 计时器 = 0;
+                while (1) {
+                    sleep(1000);
+                    计时器++;
+                    if (计时器/60 > item.time) {
+                        log('本次刷视频任务完成');
+                        loop = false;
+                        break;
+                    } else {
+                        scriptShopData[index].shuaTime = 计时器%60;
+                        Config.o_storage.put('scriptShopData', scriptShopData)
+                    }
+                }
+            });
+
+            let 已下滑次数 = 0;
+            //进入脚本主体
+            while (loop) {
+                sleep(randomNumOfSing(scriptConst.等待时间, '-'));
+                
+                //开始滑动视频
+                var x1 = random(device.width/4,(device.width/4)*3);
+                var y1 = random((device.height/4)*3.5,(device.height/4)*3.75);
+                var x2 = random(device.width/4,(device.width/4)*3);
+                var y2 = random((device.height/4)*0.25,(device.height/4)*0.5);
+
+                //开始计算上滑概率
+                if (random(1, 100) < scriptConst.上滑概率) {
+                    toastLog('准备上滑');
+                    RandomSwipe(x2, y2, x1, y1,random(500,1000));
+                } else {
+                    toastLog('准备下滑');
+                    RandomSwipe(x1, y1, x2, y2,random(500,1000));
+                    已下滑次数++;
+                }
+            }
+
+            
+            log('主循环结束');
+            //结束两个线程
+            if (抗干扰线程.isAlive()) {
+                log('中断抗干扰线程');
+                抗干扰线程.interrupt();
+            }
+
+            if (计时线程.isAlive()) {
+                log('中断计时线程');
+                计时线程.interrupt();
+            }
+
+        } else {
+            log('跳过该项目');
+        }
+    }
+});
+
+
+//函数定义
+
+/**
+ * 仿真随机带曲线滑动（视频/小说）
+ * @param {起点x} qx 
+ * @param {起点y} qy 
+ * @param {终点x} zx 
+ * @param {终点y} zy 
+ * @param {过程耗时单位毫秒} time 
+ */
+function RandomSwipe(qx, qy, zx, zy, time) {
+    var xxy = [time];
+    var point = [];
+    var dx0 = {
+        "x": qx,
+        "y": qy
+    };
+    var dx1 = {
+        "x": random(qx - (device.width/4)*0.25, qx + (device.width/4)*0.25),
+        "y": random(qy , qy + 50)
+    };
+    var dx2 = {
+        "x": random(zx - (device.width/4)*0.25, zx + (device.width/4)*0.25),
+        "y": random(zy , zy + 50)
+    };
+    var dx3 = {
+        "x": zx,
+        "y": zy
+    };
+    for (var i = 0; i < 4; i++) {
+        eval("point.push(dx" + i + ")");
+    };
+    for (let i = 0; i < 1; i += 0.08) {
+        xxyy = [parseInt(bezier_curves(point, i).x), parseInt(bezier_curves(point, i).y)]
+        xxy.push(xxyy);
+    }
+    gesture.apply(null, xxy);
+
+    function bezier_curves(cp, t) {
+        cx = 3.0 * (cp[1].x - cp[0].x); 
+        bx = 3.0 * (cp[2].x - cp[1].x) - cx; 
+        ax = cp[3].x - cp[0].x - cx - bx; 
+        cy = 3.0 * (cp[1].y - cp[0].y); 
+        by = 3.0 * (cp[2].y - cp[1].y) - cy; 
+        ay = cp[3].y - cp[0].y - cy - by; 
+        
+        tSquared = t * t; 
+        tCubed = tSquared * t; 
+        result = {
+            "x": 0,
+            "y": 0
+        };
+        result.x = (ax * tCubed) + (bx * tSquared) + (cx * t) + cp[0].x; 
+        result.y = (ay * tCubed) + (by * tSquared) + (cy * t) + cp[0].y; 
+        return result; 
+    }
+}
+
+function 抗干扰函数 (sAppName) {
+    log('本次抗干扰：%s', sAppName);
+    switch (sAppName) {
+        case "快手极速版":
+            (function(){
+                while (1) {
+                    // log('快手极速版 抗干扰');
+                    //检测青少年模式
+                    if(text("设置青少年模式").exists()){
+                        console.log("设置青少年模式");
+                        sleep(random(1000,2000));
+                        click('我知道了');
+                        console.log("点击我知道了");
+                        sleep(random(1000,2000));
+                    }
+                    //立即邀请
+                    if(text("立即邀请").exists()){
+                        console.log("立即邀请");
+                        sleep(random(1000,2000));
+                        back();
+                        console.log("关闭立即邀请");
+                        sleep(random(1000,2000));
+                    }
+                    //进入个人主页
+                    if(desc("返回").exists()){
+                        console.log("进入个人主页");
+                        sleep(random(1000,2000));
+                        desc("返回").findOne().click();
+                        sleep(random(1000,2000));
+                    }
+
+                    //个人信息保护指引
+                    if (textContains('个人信息保护指引').exists()) {
+                        toastLog('个人信息保护指引!');  
+                        sleep(random(1000,2000));
+                        click('同意');
+                        sleep(random(1000,2000));
+                    }
+
+                    //我知道了
+                    if (text('我知道了').exists()) {
+                        sleep(random(1000,2000));
+                        click('我知道了');
+                        sleep(random(1000,2000));
+                    }
+                    //检测滑块
+                    if(text("拖动滑块").findOne(1000) != null){
+                        console.log("出现滑块验证");
+                        DragSlider();
+                        sleep(random(1000,2000));
+                    }
+                }
+
+                //拖动滑块
+                function DragSlider() {
+                    for (var i = 0; i < 0; i++) { sleep(1000); log(i); }
+                    while (true) {
+                        img = images.captureScreen();
+                        if (img) {
+                            console.log("截图成功。进行识别滑块！");
+                            break;
+                        } else {
+                            console.log('截图失败,重新截图');
+                        }
+                    }
+                    var zx = discernSlidingblock(img, device.width) + 65
+                    console.info("识别结果滑块X坐标：" + zx);
+                    if (zx > -1) {
+                        //计算拖到滑块坐标
+                        var 向右拖动滑块填充拼图 = text("向右拖动滑块填充拼图").findOne();
+                        var qx = 向右拖动滑块填充拼图.bounds().left + (向右拖动滑块填充拼图.bounds().width() * 0.15) / 2;
+                        var qy = 向右拖动滑块填充拼图.bounds().centerY();
+                        var zy = qy;
+                        console.log(qx);
+                        console.log(qy);
+                        DragSliderSwipe(qx, qy, zx, zy)
+                        return true;
+                    } else {
+                        console.log("识别有误，请确认是否在滑块界面");
+                        return false;
+                    }
+                }
+
+                /**
+                 * 计算滑块位置
+                 * @param {图片} img 
+                 * @param {分辨率} ratio 
+                 */
+                function discernSlidingblock(img, ratio) {
+                    //创建识别变量
+                    var temp, temp2, x, y, num, color, p, temp3, arr1;
+                    //分析设备分辨率
+                    if (ratio == 720) {
+                        var tb = [348, 253, 691, 638, 81]
+                        log("您的设备分辨率为：720p");
+                    } else if (ratio == 1080) {
+                        var tb = [463, 387, 912, 831, 125]
+                        log("您的设备分辨率为：1080p");
+                    } else {
+                        log("当前设备分辨率不符合规范")
+                        return -2
+                    }
+                    num = Math.ceil(tb[4] / 3.3 - 4);
+
+                    //计算滑块位置
+                    for (var k = 29; k <= 40; k++) {
+                        temp2 = "";
+                        color = "#" + k + "" + k + "" + k + "";
+                        for (var i = 1; i <= num; i++) {
+                            temp2 = temp2 + "0|" + i + "|" + color + ",";
+                            temp2 = temp2 + i + "|0|" + color + ",";
+                            temp2 = temp2 + "1|" + i + "|" + color + ",";
+                            temp2 = temp2 + i + "|1|" + color + ",";
+                            temp2 = temp2 + "2|" + i + "|" + color + ",";
+                            temp2 = temp2 + i + "|2|" + color + ",";
+                        }
+                        x = 0;
+                        while (x > -2) {
+                            y = 0;
+                            while (y > -2) {
+                                temp = "";
+                                for (var i = 1; i <= num; i += 2) {
+                                    temp = temp + "0|" + (tb[4] + y - i - 1) + "|" + color + ",";
+                                    temp = temp + (tb[4] + x) + "|" + i + "|" + color + ",";
+                                    temp = temp + (tb[4] + x) + "|" + (tb[4] + y - i - 1) + "|" + color + ",";
+                                    temp = temp + (tb[4] + x - i - 1) + "|0|" + color + ",";
+                                    temp = temp + i + "|" + (tb[4] + y) + "|" + color + ",";
+                                    temp = temp + (tb[4] + x - i - 1) + "|" + (tb[4] + y) + "|" + color + ",";
+                                    temp = temp + "1|" + (tb[4] + y - i - 1) + "|" + color + ",";
+                                    temp = temp + (tb[4] + x - 1) + "|" + i + "|" + color + ",";
+                                    temp = temp + (tb[4] + x - 1) + "|" + (tb[4] + y - i - 1) + "|" + color + ",";
+                                    temp = temp + (tb[4] + x - i - 1) + "|1|" + color + ",";
+                                    temp = temp + i + "|" + (tb[4] + y - 1) + "|" + color + ",";
+                                    temp = temp + (tb[4] + x - i - 1) + "|" + (tb[4] + y - 1) + "|" + color + ",";
+                                }
+                                temp = temp + temp2 + "0|0|" + color;
+                                arr1 = temp.split(",");
+                                var arr2 = new Array();
+                                for (var i = 0; i < arr1.length - 1; i++) {
+                                    arr2[i] = new Array();
+                                    temp3 = arr1[i].split("|");
+                                    arr2[i] = [Number(temp3[0]), Number(temp3[1]), temp3[2]];
+                                }
+                                try {
+                                    p = images.findMultiColors(img, color, arr2, {
+                                        region: [tb[0], tb[1], tb[2] - tb[0], tb[3] - tb[1]],
+                                        threshold: (Math.floor(k / 10) * 16 + k % 10)
+                                    });
+                                    if (p) {
+                                        img.recycle();
+                                        return p.x
+                                    }
+                                } catch (error) {
+                                    //出错
+                                    console.log("识别失败，错误原因：" + error);
+                                    return -1;
+                                }
+                                y = --y;
+                            }
+                            x = --x;
+                        }
+                    }
+                    try {
+                        img.recycle();
+                    } catch (error) {
+                        console.log("识别失败，错误原因：" + error);
+                    }
+                    return -1;
+                }
+
+                /**
+                    * 真人模拟滑动函数 （滑块滑动）
+                    * @param {起点x} sx 
+                    * @param {起点y} sy 
+                    * @param {终点x} ex 
+                    * @param {终点y} ey 
+                    */
+                function DragSliderSwipe(sx, sy, ex, ey) {
+                    //设置随机滑动时长范围
+                    var timeMin = 1000
+                    var timeMax = 3000
+                    //设置控制点极限距离
+                    var leaveHeightLength = 500
+
+                    //根据偏差距离，应用不同的随机方式
+                    if (Math.abs(ex - sx) > Math.abs(ey - sy)) {
+                        var my = (sy + ey) / 2
+                        var y2 = my + random(0, leaveHeightLength)
+                        var y3 = my - random(0, leaveHeightLength)
+
+                        var lx = (sx - ex) / 3
+                        if (lx < 0) { lx = -lx }
+                        var x2 = sx + lx / 2 + random(0, lx)
+                        var x3 = sx + lx + lx / 2 + random(0, lx)
+                    } else {
+                        var mx = (sx + ex) / 2
+                        var y2 = mx + random(0, leaveHeightLength)
+                        var y3 = mx - random(0, leaveHeightLength)
+
+                        var ly = (sy - ey) / 3
+                        if (ly < 0) { ly = -ly }
+                        var y2 = sy + ly / 2 + random(0, ly)
+                        var y3 = sy + ly + ly / 2 + random(0, ly)
+                    }   
+                    //获取运行轨迹，及参数
+                    var time = [0, random(timeMin, timeMax)]
+                    var track = bezierCreate(sx, sy, x2, y2, x3, y3, ex, ey)
+                    // log("随机控制点A坐标：" + x2 + "," + y2)
+                    // log("随机控制点B坐标：" + x3 + "," + y3)
+                    // log("随机滑动时长：" + time[1])
+                    //滑动
+                    gestures(time.concat(track))
+                }
+
+                //计算滑块轨迹
+                function bezierCreate(x1, y1, x2, y2, x3, y3, x4, y4) {
+                    //构建参数
+                    var h = 100;
+                    var cp = [{ x: x1, y: y1 + h }, { x: x2, y: y2 + h }, { x: x3, y: y3 + h }, { x: x4, y: y4 + h }];
+                    var numberOfPoints = 100;
+                    var curve = [];
+                    var dt = 1.0 / (numberOfPoints - 1);
+                    //计算轨迹
+                    for (var i = 0; i < numberOfPoints; i++) {
+                        var ax, bx, cx;
+                        var ay, by, cy;
+                        var tSquared, tCubed;
+                        var result_x, result_y;
+
+                        cx = 3.0 * (cp[1].x - cp[0].x);
+                        bx = 3.0 * (cp[2].x - cp[1].x) - cx;
+                        ax = cp[3].x - cp[0].x - cx - bx;
+                        cy = 3.0 * (cp[1].y - cp[0].y);
+                        by = 3.0 * (cp[2].y - cp[1].y) - cy;
+                        ay = cp[3].y - cp[0].y - cy - by;
+
+                        var t = dt * i
+                        tSquared = t * t;
+                        tCubed = tSquared * t;
+                        result_x = (ax * tCubed) + (bx * tSquared) + (cx * t) + cp[0].x;
+                        result_y = (ay * tCubed) + (by * tSquared) + (cy * t) + cp[0].y;
+                        curve[i] = {
+                            x: result_x,
+                            y: result_y
+                        };
+                    }
+                    //轨迹转路数组
+                    var array = [];
+                    for (var i = 0; i < curve.length; i++) {
+                        try {
+                            var j = (i < 100) ? i : (199 - i);
+                            xx = parseInt(curve[j].x)
+                            yy = parseInt(Math.abs(100 - curve[j].y))
+                        } catch (e) {
+                            break
+                        }
+                        array.push([xx, yy])
+                    }
+                    return array
+                }
+            })();
+            break;
+        case "抖音极速版":
+            break;
+        case "刷宝短视频":
+            (function(){
+                text('推荐').waitFor();
+                sleep(2000);
+                log('已进入刷宝短视频主页');
+                click('推荐');
+                while (1) {
+                    sleep(1000);
+                    //我知道了
+                    if (text('我知道了').exists()) {
+                        sleep(random(1000,2000));
+                        click('我知道了');
+                        sleep(random(1000,2000));
+                    }
+
+                    //弹窗
+                    if (id('bad').exists()) {
+                        id('bad').findOne().click();
+                    }
+
+                    //
+                }
+            })();
+            break;
+        default :
+            console.error('没有需要抗干扰的App');
+            return;
+    }
+}
+
+//随机分割字符串函数
+function randomNumOfSing (str_0, str_1) {
+    //以str_1分割，取一个随机数
+    switch (typeof(str_0)) {
+        case 'number':
+            //是数字
+            return str_0
+        case 'string':
+            //是字符串
+            if (str_0.indexOf(str_1) > -1) {
+                num_min = str_0.split(str_1)[0]
+                num_max = str_0.split(str_1)[1]
+                return random(Number(num_min), Number(num_max))
+            } else {
+                return Number(str_0)
+            }
+        default:
+            return 0;
+    }
+}

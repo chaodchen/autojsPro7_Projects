@@ -1,0 +1,1 @@
+log(text('确定').findOne().parent().parent().click())

@@ -1,0 +1,432 @@
+"ui";
+
+// storage变量为框架自带的内部储存变量，不可删除！！！
+// 把需要保存内容的控件ID存到viewIdArr数组变量中，就能实现自动保存UI内容，目前支持编辑框、单选框、多选框、下拉菜单、开关五类控件的数据保存
+
+//声明主题颜色
+const COLOR = '#FFD700';
+//声明脚本标题
+const TITLE = '聚福网络-AutoJs第三套模板';
+//导入脚本模块函数
+//声明本地储存
+storage = storages.create('jf');
+
+//声明常用变量
+const CONFIG = storage.get('CONFIG');
+
+//加载UI框架
+drawUI();
+
+//声明脚本函数
+var scriptFun;
+threads.start(function () {
+    scriptFun = new Function('', getJianGuoYunFile(CONFIG.path+'script.js'));
+
+});
+
+
+///////////////
+//设置第一个下拉菜单数据内容
+// var sp1Array = getDir().split('|');
+// var sp2Array = getDir().split('|')[storage.get('viewDataArr')['sp2']];
+// sp2Array = getDir(sp2Array);
+
+
+function getDir (_name) {
+    _name = _name || './';
+    http.__okhttp__.setTimeout(3e4);
+    let _api = 'http://lansu.8-0000.com/getDir.php?';
+    _api = _api+'name='+_name;
+    let _res = http.get(_api)
+    if (_res.statusCode == 200) {
+        return _res.body.string();
+    } else {
+        log('服务器出错');
+        return null;
+    }
+}
+
+//绘制UI界面
+var UI = ui.inflate(
+    <vertical>
+        <horizontal>
+            <text text='屏幕高度比例：'></text>
+            <input id='gdbl' hint='请输入一个0-1的小数' w='*' textType='number'></input>
+        </horizontal>
+        <horizontal>
+            <text text='刷新延迟：'></text>
+            <input id='sxyc' hint='请输入一个范围' w='*' textType='number'></input>
+        </horizontal>
+        <horizontal>
+            <text text='定时重启：'></text>
+            <input id='dscq' hint='请输入一个时间/分钟' w='*' textType='number'></input>
+        </horizontal>
+    <horizontal>
+            <spinner spinnerMode='dropdown' id='sp1' entries='{{getDir()}}'></spinner>
+            <spinner spinnerMode='dropdown' id='sp2'></spinner>
+        </horizontal>
+        
+    </vertical>, ui.body, true
+);
+
+let isFirst = true;
+let spinnerData = getDir().split('|');
+
+//创建下拉菜单的监听事件
+let myAdapterListener = new android.widget.AdapterView.OnItemSelectedListener({
+    onItemSelected: function (parent, view, position, id) {
+        if (isFirst) {
+            isFirst = false;
+        } else {
+            log('选中了'+spinnerData[id]);
+            let address = getDir('./'+spinnerData[id]);
+            let addressArr = [];
+            address != null && address != 'NULL' ? addressArr = address.split('|') : addressArr.push('NULL');
+            change_list(ui.sp2, addressArr);
+        }
+    }
+});
+
+
+function change_list(spinner, mCountries) {
+    let sp = spinner
+    let adapter = new android.widget.ArrayAdapter(context, android.R.layout.simple_spinner_item, mCountries);
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    sp.setAdapter(adapter);
+}
+
+
+//绑定第一个下拉菜单的监听事件
+ui.sp1.setOnItemSelectedListener(myAdapterListener);
+
+//设置第二个下拉菜单的内容
+change_list(ui.sp2, getDir(spinnerData[0]).split('|'));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//需要保存的空间ID
+var viewIdArr = ['gdbl', 'sxyc', 'dscq'];
+
+//设置UI界面的内容
+try {
+    if (viewIdArr != null) setViewContent(viewIdArr);
+} catch (_err) {
+    log('设置UI内容报错！');
+}
+
+
+function saveViewContent (_viewArr) {
+
+    let _viewDataArr = {};
+    _viewArr.forEach((_view) => {
+        switch (ui.findView(_view).getAccessibilityClassName()) {
+            case 'android.widget.EditText':
+                // log('文本控件');
+                _viewDataArr[_view] = ui[_view].text();
+                break;
+            case 'android.widget.CheckBox':
+                // log('多选框控件');
+                _viewDataArr[_view] = ui[_view].isChecked();
+                break;
+            case 'android.widget.RadioButton':
+                // log('单选框控件');
+                _viewDataArr[_view] = ui[_view].isChecked();
+                break;
+            case 'android.widget.Spinner':
+                // log('下拉菜单控件');
+                _viewDataArr[_view] = ui[_view].getSelectedItemPosition();
+                break;
+            case 'android.widget.Switch':
+                log('开关控件');
+                _viewDataArr[_view] = ui[_view].isChecked();
+                break;
+            default:
+                log('当心 你的控件不符合规范');
+        }
+    });
+    log(_viewDataArr);
+    log('开始写入本地储存');
+    storage.put('viewDataArr', _viewDataArr);
+}
+
+function setViewContent (_viewArr) {
+    //开始读取本地储存
+    let _viewDataArr = storage.get('viewDataArr')
+    log(_viewDataArr);
+    _viewArr.forEach((_view) => {
+        switch (ui.findView(_view).getAccessibilityClassName()) {
+            case 'android.widget.EditText':
+                ui[_view].setText(_viewDataArr[_view]);
+                break;
+            case 'android.widget.CheckBox':
+                ui[_view].checked = _viewDataArr[_view];
+                break;
+            case 'android.widget.RadioButton':
+                ui[_view].checked = _viewDataArr[_view];
+                break;
+            case 'android.widget.Spinner':
+                ui[_view].setSelection(_viewDataArr[_view]);
+                break;
+            case 'android.widget.Switch':
+                ui[_view].checked = _viewDataArr[_view];
+                break;
+            default:
+                log('当前输入错误！！！');
+        }
+    });
+
+}
+
+
+function getJianGuoYunFile (_path) {
+    // log('_path::'+_path);
+    http.__okhttp__.setTimeout(3e4);
+
+    //声明本地储存
+    let st = storages.create('jf');
+
+    //声明常用变量
+    let config = st.get('CONFIG');
+
+    let  _res = http.get('http://dav.jianguoyun.com/dav/' + _path , {
+        headers : {
+            "Authorization": "Basic " + java.lang.String(android.util.Base64.encode(java.lang.String(config.user + ':' + config.key).getBytes(), 2)),
+            "Content-Type": "text/plain;charset=UTF-8",
+            "Connection": "Keep-Alive",
+            "Accept-Encoding": "gzip",
+            "User-Agent": "okhttp/3.12.1"
+        }
+    });
+    r = _res;
+
+    if (r.statusCode == 200) {
+        // log("打印："+r.body.string());
+        return r.body.string();
+
+    } else {
+        log('坚果云服务器访问失败!'+r.statusCode)
+        return null;
+    }
+}
+
+function downloadModFile (_path) {
+    let _modString = getJianGuoYunFile (_path);
+    let _fileName = _path.match(/[^\/]+.js/)[0];
+    // log('_modString:'+_modString);
+    // log('_fileName:'+_fileName);
+
+    files.write('./'+_fileName, _modString);
+    // log('js文件写入成功');
+}
+
+function importMods (_path) {
+    downloadModFile(_path);
+    return require(_path.match(/[^\/]+.js/)[0]);
+}
+function drawUI () {
+    ui.layout(
+        <frame>
+            <vertical>
+                <appbar bg='{{this.COLOR}}'>
+                    <toolbar title='{{this.TITLE}}'></toolbar>
+                </appbar>
+                <card cardCornerRadius='5dp' margin='5dp' cardElevation='5dp' padding='5 5 5 5'>
+                    <vertical>
+                        <Switch id='autoService' text='无障碍服务' checked='{{auto.service != null}}' padding='8 8 8 8' textSize='15sp'></Switch>
+                        <Switch id='windowService' text='悬浮窗服务' checked='' padding='8 8 8 8' textSize='15sp'></Switch>
+                        <horizontal>
+                            <button id='start' gravity='center' layout_weight='1' text='开始运行' textSize='16sp' textColor='#000000'></button>
+                            <button id='quit' gravity='center' layout_weight='1' text='退出脚本' textSize='16sp' textColor='#000000'></button>
+                        </horizontal>
+                    </vertical>
+                </card>
+                <ScrollView>
+                    <vertical id='body' w='*' h='*' padding='5dp'>
+
+                    </vertical>
+                </ScrollView>
+            </vertical>
+        </frame>
+    );
+    ui.statusBarColor(COLOR);
+
+    //无障碍服务按钮单机事件
+    ui.autoService.on('click', () => {
+        ui.autoService.isChecked() ? auto.service == null ? app.startActivity({action: "android.settings.ACCESSIBILITY_SETTINGS"}) : log('无障碍处于打开状态') : auto.service == null ? log('无障碍处于关闭状态') : auto.service.disableSelf();
+    });
+    var open_err, close_err;
+    //悬浮窗权限
+    ui.windowService.on('click', () => {
+        if (this.scriptThreads && this.scriptThreads.isAlive()) {
+            log('脚本线程存在！并且脚本线程存活');
+            this.windowImg = '@drawable/ic_pause_circle_outline_black_48dp';
+        } else {
+            log('脚本线程不存在');
+            this.windowImg = '@drawable/ic_play_circle_filled_white_black_48dp';
+        }
+        if (ui.windowService.isChecked()) {
+            toastLog('开启悬浮窗');
+            try {
+                openWindow();
+            } catch (_err_a) {
+                log('打开悬浮窗报错');
+                ui.windowService.setChecked(false);
+            }
+        } else {
+            try {
+                toastLog('关闭悬浮窗');
+                closeWindow();
+            } catch (_err_b) {
+                log('关闭悬浮窗报错');
+                ui.windowService.setChecked(true);
+            }
+        }
+    });
+
+    //回到本界面时，触发resume事件
+    ui.emitter.on('resume', ()=> {
+        auto.service == null ? ui.autoService.setChecked(false) : ui.autoService.setChecked(true);
+
+    });
+
+    //开始按钮单击事件
+    ui.start.on('click', ()=> {
+
+
+        if (this.scriptThreads && this.scriptThreads.isAlive()) {
+            this.windowImg = '@drawable/ic_pause_circle_outline_black_48dp';
+            log('脚本线程存在 ');
+
+        } else {
+            log('脚本线程不存在！');
+            this.windowImg = '@drawable/ic_pause_circle_outline_black_48dp';
+            log('开始一个新线程 执行脚本');
+            try {
+                if (viewIdArr != null) saveViewContent(viewIdArr);
+
+            } catch (_err) {
+                toastLog('保存UI配置报错！');
+
+            }
+            this.scriptThreads = threads.start(this.scriptFun);
+        }
+
+        if (this.windowObj) this.windowObj.windowButton.setSource(this.windowImg);
+    })
+
+    //退出脚本单击事件
+    ui.quit.on('click', () => {
+        exit();
+    });
+
+    function openWindow () {
+        if (!this.windowObj) {
+
+            log('绘制悬浮窗口');
+            this.windowObj = floaty.rawWindow(
+                <frame>
+                    <img w="auto" h="auto" src="{{this.windowImg}}" id='windowButton'/>
+                </frame>
+            );
+
+            //设置悬浮窗位置
+            this.windowObj.setPosition(0, device.height/2);
+
+            let window = this.windowObj;
+            //记录按键被按下时的触摸坐标
+            var x = 0, y = 0;
+            //记录按键被按下时的悬浮窗位置
+            var windowX, windowY;
+            //记录按键被按下的时间以便判断长按等动作
+            var downTime;
+
+            window.windowButton.setOnTouchListener(function(view, event){
+                switch(event.getAction()){
+                    case event.ACTION_DOWN:
+                        x = event.getRawX();
+                        y = event.getRawY();
+                        windowX = window.getX();
+                        windowY = window.getY();
+                        downTime = new Date().getTime();
+                        return true;
+                    case event.ACTION_MOVE:
+                        //移动手指时调整悬浮窗位置
+                        window.setPosition(windowX + (event.getRawX() - x),
+                            windowY + (event.getRawY() - y));
+                        //如果按下的时间超过1.5秒判断为长按，退出脚本
+                        if(new Date().getTime() - downTime > 1500){
+                            toastLog('长按退出脚本！');
+                            exit();
+                        }
+                        return true;
+                    case event.ACTION_UP:
+                        //手指弹起时如果偏移很小则判断为点击
+                        if(Math.abs(event.getRawY() - y) < 5 && Math.abs(event.getRawX() - x) < 5){
+                            // toastLog('点击了按钮');
+                            windowButtonClick();
+                        }
+                        return true;
+                }
+                return true;
+            });
+
+            function windowButtonClick() {
+
+                // log('点击了开始');
+                // log('脚本线程：'+this.scriptThreads)
+                // log('悬浮窗：'+this.windowObj)
+                // log('悬浮窗图标：'+this.windowImg)
+
+
+                if (this.windowImg == '@drawable/ic_play_circle_filled_white_black_48dp') {
+                    log('现在是播放');
+                    this.windowImg = '@drawable/ic_pause_circle_outline_black_48dp';
+                } else {
+                    log('现在是停止');
+                    this.windowImg = '@drawable/ic_play_circle_filled_white_black_48dp';
+                }
+                this.windowObj.windowButton.setSource(this.windowImg);
+
+                if (this.scriptThreads && this.scriptThreads.isAlive()) {
+                    log('脚本存在 并且脚本线程存活')
+                    this.scriptThreads.interrupt();
+                } else {
+                    log('脚本不存在  并且脚本线程不存活');
+                    try {
+                        if (viewIdArr != null ) saveViewContent(viewIdArr);
+                    } catch (_err) {
+                        log('保存控件信报错@')
+                    }
+                    this.scriptThreads = threads.start(this.scriptFun);
+                }
+
+            }
+        } else {
+            toastLog('悬浮窗已打开！');
+        }
+    }
+
+    function closeWindow () {
+        if(this.windowObj != null) {
+            this.windowObj.close();
+            this.windowObj = null;
+        } else {
+            toastLog('悬浮窗已关闭');
+        }
+    }
+
+}
+
+
+

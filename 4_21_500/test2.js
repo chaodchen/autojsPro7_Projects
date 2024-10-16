@@ -1,0 +1,1 @@
+log(app.getPackageName('养猫联盟'))

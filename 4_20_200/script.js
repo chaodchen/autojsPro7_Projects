@@ -1,0 +1,1 @@
+log(app.getPackageName('我的人生'))

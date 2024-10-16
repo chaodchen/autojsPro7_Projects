@@ -1,0 +1,1 @@
+app.launch('com.ss.android.article.video')

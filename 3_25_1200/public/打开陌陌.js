@@ -1,0 +1,5 @@
+app.launch('com.immomo.momo')
+text('欢迎使用MOMO陌陌APP').waitFor()
+log('欢迎使用MOMO陌陌APP')
+text('同意').findOne().click()
+log('同意协议')

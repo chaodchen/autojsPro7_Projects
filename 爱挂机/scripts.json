@@ -1,0 +1,32 @@
+[
+    {
+        "name":"阴阳师系列",
+        "path":"TaoBao/1_8_阴阳师脚本/main.js",
+        "icon":"http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/yys.png",
+        "desc":"全自动刷妖气、斗技、御魂，让你解放双手！"
+    },
+    {
+        "name":"贴吧助手",
+        "path":"TaoBao/1_13_百度贴吧/main.js",
+        "icon":"http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/tieba.png",
+        "desc":"目前只有全自动顶帖的功能，支持云手机、模拟器、真机！"
+    },
+    {
+        "name":"羊毛衫",
+        "path":"My/羊毛助手/main.js",
+        "icon":"http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/kuaishoujisu.png",
+        "desc":"目前支持快手极速版、抖音极速版等全自动看视频任务。"
+    },
+    {
+        "name":"京东炸年兽",
+        "path":"TaoBao/1_24_京东/main.js",
+        "icon":"http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/jd.png",
+        "desc":"全自动后台协议操作全部任务！！！"
+    },
+    {
+        "name":"抖音养号",
+        "path":"TaoBao/1_25_抖音养号/main.js",
+        "icon":"http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/douyin.png",
+        "desc":"根据指定的关键词养号！！！"
+    }
+]

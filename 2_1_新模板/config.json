@@ -1,0 +1,39 @@
+{
+    "style":{
+        "标题" : "我的脚本",
+        "副标题" : "欢迎使用这个软件",
+        "公告" : "这个是软件的公告\n换行一下！",
+        "主题颜色" : "#FFC0CB",
+        "会员系统" : {
+            "开关" : true,
+            "key" : "c0bosdso6itd9d2u21h0",
+            "secret" : "LjdrmQy1VRTUp86Ubmr2RUslAHji9I2s"
+        }
+    },
+    "script":[
+        {
+            "title" : "脚本1",
+            "desc" : "这个是脚本1的描述",
+            "icon" : "http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/douyin.png",
+            "path" : "script/脚本1.js"
+        },
+        {
+            "title" : "脚本2",
+            "desc" : "这个是脚本2的描述",
+            "icon" : "http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/douyin.png",
+            "path" : "script/脚本2.js"
+        },
+        {
+            "title" : "抖音爱玩",
+            "desc" : "这个是脚本2的描述",
+            "icon" : "http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/douyin.png",
+            "path" : "script/脚本2.js"
+        },
+        {
+            "title" : "快手",
+            "desc" : "这个是脚本2的描述",
+            "icon" : "http://aj.8888-8.cn/appImg/AiGuaJi/scriptIcon/douyin.png",
+            "path" : "script/脚本2.js"
+        }
+    ]
+}

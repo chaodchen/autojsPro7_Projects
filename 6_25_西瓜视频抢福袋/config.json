@@ -1,0 +1,40 @@
+{
+    "version":"0.0.2",
+    "creationTime":"2020-6-25",
+    "projectName":"西瓜视频抢福袋",
+    "themeColor":"#EEB4B4",
+    "notice":"欢迎使用AutoJs班花模板",
+    "member":false,
+    "uiConfig":{
+        "editView":[
+            {
+                "hint":"栏目名称",
+                "inputType":"TYPE_CLASS_TEXT"
+            },
+            {
+                "hint":"下滑次数",
+                "inputType":"TYPE_CLASS_NUMBER"
+            },
+            {
+                "hint":"屏幕亮度",
+                "inputType":"TYPE_CLASS_NUMBER"
+            }
+        ],
+        "radioView":[
+            {
+                "text":"华为P9 EMUI 8.0.0"
+            },
+            {
+                "text":"小米4LTE LineageOS 14.1"
+            }
+        ],
+        "checkboxView":[
+            {
+                "text":"状态悬浮窗"
+            }
+        ]
+    },
+    "userConfig":{
+
+    }
+}
